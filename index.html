@@ -69,17 +69,19 @@
 </head>
 <body>
   <h1>Dinosaur Clicker</h1>
-  <img id="dino" src="https://cdn-icons-png.flaticon.com/512/616/616408.png" alt="Dinosaur" />
+  <img id="dino" src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Allosaurus_fossil.svg/600px-Allosaurus_fossil.svg.png" alt="Dinosaur" />
   <div id="score">Score: 0</div>
   <button id="resetBtn">Reset Score</button>
 
   <div id="upgrades">
     <h2>Upgrades</h2>
-    <button class="upgrade" id="autoClicker" disabled>
-      Auto Clicker (Cost: 10) - Adds 1 point per second
+    <button class="upgrade" id="autoClicker">
+      Auto Clicker (Cost: <span id="autoCost">10</span>) - Adds 1 point per second per upgrade<br>
+      Owned: <span id="autoCount">0</span>
     </button>
-    <button class="upgrade" id="doubleClick" disabled>
-      Double Click Power (Cost: 20) - Clicks count as 2 points
+    <button class="upgrade" id="doubleClick">
+      Double Click Power (Cost: <span id="doubleCost">20</span>) - Each click multiplier<br>
+      Owned: <span id="doubleCount">0</span>
     </button>
   </div>
 
@@ -90,49 +92,80 @@
     const scoreDisplay = document.getElementById('score');
     const resetBtn = document.getElementById('resetBtn');
     const clickSound = document.getElementById('clickSound');
+
     const autoClickerBtn = document.getElementById('autoClicker');
     const doubleClickBtn = document.getElementById('doubleClick');
 
+    const autoCostSpan = document.getElementById('autoCost');
+    const doubleCostSpan = document.getElementById('doubleCost');
+    const autoCountSpan = document.getElementById('autoCount');
+    const doubleCountSpan = document.getElementById('doubleCount');
+
     let score = 0;
-    let clickPower = 1;
-    let autoClickerActive = false;
+
+    // Upgrades state
+    let autoClickerCount = 0;
+    let doubleClickCount = 0;
+
+    // Base costs
+    let autoClickerCost = 10;
+    let doubleClickCost = 20;
+
+    // Auto click interval variable
     let autoClickerInterval;
 
     function saveGame() {
       localStorage.setItem('dinoScore', score);
-      localStorage.setItem('dinoClickPower', clickPower);
-      localStorage.setItem('dinoAutoClicker', autoClickerActive);
+      localStorage.setItem('autoClickerCount', autoClickerCount);
+      localStorage.setItem('doubleClickCount', doubleClickCount);
+      localStorage.setItem('autoClickerCost', autoClickerCost);
+      localStorage.setItem('doubleClickCost', doubleClickCost);
     }
 
     function loadGame() {
       const savedScore = parseInt(localStorage.getItem('dinoScore'));
-      const savedClickPower = parseInt(localStorage.getItem('dinoClickPower'));
-      const savedAutoClicker = localStorage.getItem('dinoAutoClicker') === 'true';
+      const savedAutoCount = parseInt(localStorage.getItem('autoClickerCount'));
+      const savedDoubleCount = parseInt(localStorage.getItem('doubleClickCount'));
+      const savedAutoCost = parseInt(localStorage.getItem('autoClickerCost'));
+      const savedDoubleCost = parseInt(localStorage.getItem('doubleClickCost'));
 
       if (!isNaN(savedScore)) score = savedScore;
-      if (!isNaN(savedClickPower)) clickPower = savedClickPower;
-      autoClickerActive = savedAutoClicker;
+      if (!isNaN(savedAutoCount)) autoClickerCount = savedAutoCount;
+      if (!isNaN(savedDoubleCount)) doubleClickCount = savedDoubleCount;
+      if (!isNaN(savedAutoCost)) autoClickerCost = savedAutoCost;
+      if (!isNaN(savedDoubleCost)) doubleClickCost = savedDoubleCost;
 
-      if (autoClickerActive) startAutoClicker();
+      startAutoClicker();
     }
 
     function updateUI() {
       scoreDisplay.textContent = 'Score: ' + score;
-      autoClickerBtn.disabled = score < 10 || autoClickerActive;
-      doubleClickBtn.disabled = score < 20 || clickPower > 1;
+
+      autoCostSpan.textContent = autoClickerCost;
+      doubleCostSpan.textContent = doubleClickCost;
+
+      autoCountSpan.textContent = autoClickerCount;
+      doubleCountSpan.textContent = doubleClickCount;
+
+      // Enable or disable buttons depending on score
+      autoClickerBtn.disabled = score < autoClickerCost;
+      doubleClickBtn.disabled = score < doubleClickCost;
+
       saveGame();
     }
 
     function startAutoClicker() {
-      autoClickerBtn.disabled = true;
-      autoClickerInterval = setInterval(() => {
-        score++;
-        updateUI();
-      }, 1000);
+      clearInterval(autoClickerInterval);
+      if (autoClickerCount > 0) {
+        autoClickerInterval = setInterval(() => {
+          score += autoClickerCount;
+          updateUI();
+        }, 1000);
+      }
     }
 
     dino.addEventListener('click', () => {
-      score += clickPower;
+      score += Math.pow(2, doubleClickCount); // Each doubleClick upgrades doubles points
       updateUI();
       clickSound.currentTime = 0;
       clickSound.play();
@@ -140,26 +173,30 @@
 
     resetBtn.addEventListener('click', () => {
       score = 0;
-      clickPower = 1;
-      autoClickerActive = false;
+      autoClickerCount = 0;
+      doubleClickCount = 0;
+      autoClickerCost = 10;
+      doubleClickCost = 20;
       clearInterval(autoClickerInterval);
       updateUI();
       localStorage.clear();
     });
 
     autoClickerBtn.addEventListener('click', () => {
-      if (score >= 10 && !autoClickerActive) {
-        score -= 10;
-        autoClickerActive = true;
+      if (score >= autoClickerCost) {
+        score -= autoClickerCost;
+        autoClickerCount++;
+        autoClickerCost = Math.floor(autoClickerCost * 1.5);
         updateUI();
         startAutoClicker();
       }
     });
 
     doubleClickBtn.addEventListener('click', () => {
-      if (score >= 20 && clickPower === 1) {
-        score -= 20;
-        clickPower = 2;
+      if (score >= doubleClickCost) {
+        score -= doubleClickCost;
+        doubleClickCount++;
+        doubleClickCost = Math.floor(doubleClickCost * 1.7);
         updateUI();
       }
     });
