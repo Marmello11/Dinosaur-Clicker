@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dinosaur Clicker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #def7f1;
+      margin: 0;
+      padding: 2rem;
+    }
+    h1 {
+      color: #2c3e50;
+    }
+    #dino {
+      width: 200px;
+      cursor: pointer;
+      transition: transform 0.1s ease;
+      user-select: none;
+    }
+    #dino:active {
+      transform: scale(0.95);
+    }
+    #score {
+      font-size: 2rem;
+      margin-top: 1rem;
+      color: #27ae60;
+    }
+    button {
+      margin: 1rem 0.5rem 0 0.5rem;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      background-color: #27ae60;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.3s ease;
+    }
+    button:hover:not(:disabled) {
+      background-color: #219150;
+    }
+    button:disabled {
+      background-color: #95a5a6;
+      cursor: not-allowed;
+    }
+    #upgrades {
+      margin-top: 2rem;
+    }
+    .upgrade {
+      background-color: #2980b9;
+      margin: 0.5rem auto;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      color: white;
+      max-width: 300px;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.3s ease;
+    }
+    .upgrade:hover:not(:disabled) {
+      background-color: #1c5980;
+    }
+  </style>
+</head>
+<body>
+  <h1>Dinosaur Clicker</h1>
+  <img id="dino" src="https://cdn-icons-png.flaticon.com/512/616/616408.png" alt="Dinosaur" />
+  <div id="score">Score: 0</div>
+  <button id="resetBtn">Reset Score</button>
+
+  <div id="upgrades">
+    <h2>Upgrades</h2>
+    <button class="upgrade" id="autoClicker" disabled>
+      Auto Clicker (Cost: 10) - Adds 1 point per second
+    </button>
+    <button class="upgrade" id="doubleClick" disabled>
+      Double Click Power (Cost: 20) - Clicks count as 2 points
+    </button>
+  </div>
+
+  <audio id="clickSound" src="https://freesound.org/data/previews/256/256113_3263906-lq.mp3"></audio>
+
+  <script>
+    const dino = document.getElementById('dino');
+    const scoreDisplay = document.getElementById('score');
+    const resetBtn = document.getElementById('resetBtn');
+    const clickSound = document.getElementById('clickSound');
+    const autoClickerBtn = document.getElementById('autoClicker');
+    const doubleClickBtn = document.getElementById('doubleClick');
+
+    let score = 0;
+    let clickPower = 1;
+    let autoClickerActive = false;
+    let autoClickerInterval;
+
+    function saveGame() {
+      localStorage.setItem('dinoScore', score);
+      localStorage.setItem('dinoClickPower', clickPower);
+      localStorage.setItem('dinoAutoClicker', autoClickerActive);
+    }
+
+    function loadGame() {
+      const savedScore = parseInt(localStorage.getItem('dinoScore'));
+      const savedClickPower = parseInt(localStorage.getItem('dinoClickPower'));
+      const savedAutoClicker = localStorage.getItem('dinoAutoClicker') === 'true';
+
+      if (!isNaN(savedScore)) score = savedScore;
+      if (!isNaN(savedClickPower)) clickPower = savedClickPower;
+      autoClickerActive = savedAutoClicker;
+
+      if (autoClickerActive) startAutoClicker();
+    }
+
+    function updateUI() {
+      scoreDisplay.textContent = 'Score: ' + score;
+      autoClickerBtn.disabled = score < 10 || autoClickerActive;
+      doubleClickBtn.disabled = score < 20 || clickPower > 1;
+      saveGame();
+    }
+
+    function startAutoClicker() {
+      autoClickerBtn.disabled = true;
+      autoClickerInterval = setInterval(() => {
+        score++;
+        updateUI();
+      }, 1000);
+    }
+
+    dino.addEventListener('click', () => {
+      score += clickPower;
+      updateUI();
+      clickSound.currentTime = 0;
+      clickSound.play();
+    });
+
+    resetBtn.addEventListener('click', () => {
+      score = 0;
+      clickPower = 1;
+      autoClickerActive = false;
+      clearInterval(autoClickerInterval);
+      updateUI();
+      localStorage.clear();
+    });
+
+    autoClickerBtn.addEventListener('click', () => {
+      if (score >= 10 && !autoClickerActive) {
+        score -= 10;
+        autoClickerActive = true;
+        updateUI();
+        startAutoClicker();
+      }
+    });
+
+    doubleClickBtn.addEventListener('click', () => {
+      if (score >= 20 && clickPower === 1) {
+        score -= 20;
+        clickPower = 2;
+        updateUI();
+      }
+    });
+
+    loadGame();
+    updateUI();
+  </script>
+</body>
+</html>
